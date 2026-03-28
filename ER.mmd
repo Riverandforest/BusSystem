@@ -1,0 +1,90 @@
+erDiagram
+    %% ==========================================
+    %% 字典表 (基础数据)
+    %% ==========================================
+    TeamLeader {
+        varchar leader_id PK "队长ID"
+        varchar name "姓名"
+    }
+    
+    ViolationType {
+        varchar type_name PK "违章类型名称"
+    }
+
+    %% ==========================================
+    %% 实体表 (Entity Tables)
+    %% ==========================================
+    Team {
+        varchar team_id PK "车队编号"
+        varchar leader_id FK "关联车队长"
+    }
+
+    Line {
+        varchar line_id PK "线路编号"
+        varchar team_id FK "所属车队"
+    }
+
+    Station {
+        varchar station_name PK "站点名称"
+        varchar line_id FK "所属线路(强绑定)"
+    }
+
+    Bus {
+        varchar plate_num PK "车牌号"
+        int seats "座位数"
+        varchar line_id FK "所属线路"
+    }
+
+    Driver {
+        varchar driver_id PK "工号"
+        varchar name "姓名"
+        varchar gender "性别"
+        varchar line_id FK "所属线路"
+    }
+
+    %% ==========================================
+    %% 联系表 (Relationship Tables)
+    %% 这些表本质上是“联系”，但在物理上体现为独立的表
+    %% ==========================================
+    
+    LineLeader {
+        varchar line_id PK,FK "线路(兼主键)"
+        varchar driver_id FK "被任命的司机"
+        date appointed_date "任命时间"
+    }
+    %% 说明：LineLeader是 'Line' 和 'Driver' 之间的任命关系表
+
+    Violation {
+        int v_id PK "违章流水号"
+        varchar driver_id FK "违章司机"
+        varchar plate_num FK "违章车辆"
+        varchar v_type FK "违章类型"
+        varchar location FK "违章地点"
+        timestamp v_time "发生时间"
+    }
+    %% 说明：Violation 是连接 Driver, Bus, Station, Type 的多元关系表
+
+    %% ==========================================
+    %% 物理外键关系连线
+    %% ==========================================
+
+    %% 1. TeamLeader -> Team
+    TeamLeader ||--o{ Team : "管理"
+    
+    %% 2. Team -> Line
+    Team ||--o{ Line : "下辖"
+
+    %% 3. Line -> Station/Bus/Driver (1:N 外键关系)
+    Line ||--o{ Station : "拥有"
+    Line ||--o{ Bus : "配备"
+    Line ||--o{ Driver : "聘用"
+
+    %% 4. LineLeader (关系表连接)
+    Line ||--|| LineLeader : "被任命"
+    Driver ||--o{ LineLeader : "担任"
+
+    %% 5. Violation (关系表连接)
+    Driver ||--o{ Violation : "造成"
+    Bus ||--o{ Violation : "涉及"
+    ViolationType ||--o{ Violation : "属于"
+    Station ||--o{ Violation : "发生于"

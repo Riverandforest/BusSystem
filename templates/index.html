@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公交安全管理系统</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding-top: 20px; background-color: #f8f9fa; }
+        .feature-section { display: none; } /* 默认隐藏所有功能区 */
+        .feature-section.active { display: block; } /* 激活时显示 */
+        .nav-link { cursor: pointer; }
+        .alert { display: none; } /* 默认隐藏提示框 */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">公交安全管理系统</h1>
+
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="list-group">
+                    <a class="list-group-item list-group-item-action active" data-target="section-add-driver">1. 录入司机信息</a>
+                    <a class="list-group-item list-group-item-action" data-target="section-add-bus">2. 录入车辆信息</a>
+                    <a class="list-group-item list-group-item-action" data-target="section-violation-auth">3. 录入违章信息 (需权限)</a>
+                    <a class="list-group-item list-group-item-action" data-target="section-query-team-drivers">4. 查询车队司机</a>
+                    <a class="list-group-item list-group-item-action" data-target="section-query-driver-violations">5. 查询司机违章详情</a>
+                    <a class="list-group-item list-group-item-action" data-target="section-query-team-stats">6. 查询车队违章统计</a>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div id="global-alert" class="alert alert-dismissible fade show" role="alert">
+                    <span id="alert-message"></span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.style.display='none'"></button>
+                </div>
+
+                <div id="section-add-driver" class="feature-section active card card-body">
+                    <h4 class="card-title">录入司机信息</h4>
+                    <form id="form-add-driver">
+                        <div class="mb-3"><label class="form-label">工号 (如 D051):</label><input type="text" class="form-control" name="driver_id" required></div>
+                        <div class="mb-3"><label class="form-label">姓名:</label><input type="text" class="form-control" name="name" required></div>
+                        <div class="mb-3"><label class="form-label">性别:</label>
+                            <select class="form-select" name="gender"><option value="男">男</option><option value="女">女</option></select>
+                        </div>
+                        <div class="mb-3"><label class="form-label">所属线路 (如 L01):</label><input type="text" class="form-control" name="line_id" required></div>
+
+                        <div class="mb-3"><label class="form-label">职位任命:</label>
+                            <select class="form-select" name="is_lineleader">
+                                <option value="false">普通司机</option>
+                                <option value="true">路队长</option>
+                            </select>
+                            <div class="form-text text-muted">注意：每条线路原则上只能有一位路队长。</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">提交录入</button>
+                    </form>
+                </div>
+
+                <div id="section-add-bus" class="feature-section card card-body">
+                    <h4 class="card-title">录入车辆信息</h4>
+                    <form id="form-add-bus">
+                        <div class="mb-3"><label class="form-label">车牌号 (如 陕A-12345):</label><input type="text" class="form-control" name="plate_num" required></div>
+                        <div class="mb-3"><label class="form-label">座位数:</label><input type="number" class="form-control" name="seats" required></div>
+                        <div class="mb-3"><label class="form-label">所属线路 (如 L01):</label><input type="text" class="form-control" name="line_id" required></div>
+                        <button type="submit" class="btn btn-primary">提交录入</button>
+                    </form>
+                </div>
+
+                <div id="section-violation-auth" class="feature-section card card-body">
+                    <h4 class="card-title">权限验证</h4>
+                    <p>录入违章信息需要路队长权限，请先验证您的身份。</p>
+                    <div class="mb-3">
+                        <label class="form-label">请输入您的路队长工号:</label>
+                        <input type="text" id="auth-user-id" class="form-control">
+                    </div>
+                    <button id="btn-check-auth" class="btn btn-warning">验证身份</button>
+                </div>
+
+                <div id="section-add-violation" class="feature-section card card-body">
+                    <h4 class="card-title">录入违章信息 <span id="auth-line-info" class="badge bg-success ms-2"></span></h4>
+                    <form id="form-add-violation">
+                        <input type="hidden" id="managed-line-id" name="managed_line_id">
+                        <div class="mb-3"><label class="form-label">违章司机工号:</label><input type="text" class="form-control" name="driver_id" required></div>
+                        <div class="mb-3"><label class="form-label">违章车牌:</label><input type="text" class="form-control" name="plate_num" required></div>
+                        <div class="mb-3"><label class="form-label">违章类型:</label>
+                            <select class="form-select" name="v_type" id="violation-type-select" required></select>
+                        </div>
+                        <div class="mb-3"><label class="form-label">违章地点 (仅显示您管理的线路站点):</label>
+                            <select class="form-select" name="location" id="violation-location-select" required></select>
+                        </div>
+                        <div class="mb-3"><label class="form-label">违章时间:</label><input type="datetime-local" class="form-control" name="v_time" required step="1"></div>
+                        <button type="submit" class="btn btn-danger">提交违章记录</button>
+                    </form>
+                </div>
+
+                <div id="section-query-team-drivers" class="feature-section card card-body">
+                    <h4 class="card-title">查询车队司机</h4>
+                    <div class="input-group mb-3">
+                        <input type="text" id="query-team-id" class="form-control" placeholder="输入车队编号 (如 T01)">
+                        <button class="btn btn-info" id="btn-query-team-drivers">查询</button>
+                    </div>
+                    <table class="table table-striped">
+                        <thead><tr><th>工号</th><th>姓名</th><th>性别</th><th>线路</th><th>职位</th></tr></thead>
+                        <tbody id="tbody-team-drivers"></tbody>
+                    </table>
+                </div>
+
+                <div id="section-query-driver-violations" class="feature-section card card-body">
+                    <h4 class="card-title">查询司机违章详情</h4>
+                    <div class="row g-2 mb-3 align-items-end">
+                        <div class="col-md-3"><label class="form-label">司机工号</label><input type="text" id="q-driver-id" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">开始日期</label><input type="date" id="q-dv-start" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">结束日期</label><input type="date" id="q-dv-end" class="form-control"></div>
+                        <div class="col-md-3"><button class="btn btn-info w-100" id="btn-query-driver-violations">查询</button></div>
+                    </div>
+                    <table class="table table-hover">
+                        <thead><tr><th>时间</th><th>类型</th><th>地点</th><th>车牌</th></tr></thead>
+                        <tbody id="tbody-driver-violations"></tbody>
+                    </table>
+                </div>
+
+                 <div id="section-query-team-stats" class="feature-section card card-body">
+                    <h4 class="card-title">查询车队违章统计</h4>
+                    <div class="row g-2 mb-3 align-items-end">
+                        <div class="col-md-3"><label class="form-label">车队编号</label><input type="text" id="q-stat-team-id" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">开始日期</label><input type="date" id="q-stat-start" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">结束日期</label><input type="date" id="q-stat-end" class="form-control"></div>
+                        <div class="col-md-3"><button class="btn btn-primary w-100" id="btn-query-team-stats">统计</button></div>
+                    </div>
+                    <ul class="list-group" id="list-team-stats"></ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
